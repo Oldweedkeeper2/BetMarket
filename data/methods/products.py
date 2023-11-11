@@ -45,3 +45,15 @@ class ProductSQL:
             print(f"An error occurred: {e}")
             await session.rollback()
             return []
+    
+    @classmethod
+    async def get_by_id(cls, id: int) -> Product | None:
+        try:
+            async with AsyncSessionLocal() as session:  # type: AsyncSession
+                result = await session.execute(select(Product).where(Product.id == id))
+                products = result.scalar_one_or_none()
+                return products
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            await session.rollback()
+            return None
