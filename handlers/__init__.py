@@ -4,7 +4,7 @@ from filters import ChatPrivateFilter
 
 
 def setup_routers() -> Router:
-    from .users import start, help, products
+    from .users import start, help, products, cart
     from .errors import error_handler
     
     router = Router()
@@ -14,6 +14,7 @@ def setup_routers() -> Router:
     
     router.include_router(start.router)
     router.include_router(products.router)
+    router.include_router(cart.router)
     router.include_router(help.router)
     router.include_router(error_handler.router)
     

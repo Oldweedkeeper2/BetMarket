@@ -42,12 +42,14 @@ def paginator(product_list: List, page: int = 0):
         builder.row(InlineKeyboardButton(text=str(product.name),
                                          callback_data=ProductData(id=product.id).pack()))
     builder.row(*create_pagination_buttons(page), width=3)
+    builder.row(InlineKeyboardButton(text='Главная',
+                                     callback_data='start'))
     return builder.as_markup()
 
 
 def get_back_keyboard():
     return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="Назад", callback_data="get_products")]])
+            inline_keyboard=[[InlineKeyboardButton(text="Назад", callback_data="get_products")]])
 
 
 def create_product_pagination_buttons(amount: int):
@@ -61,7 +63,6 @@ def create_product_pagination_buttons(amount: int):
 
 def get_product_keyboard(amount: int = 0):
     builder = InlineKeyboardBuilder()
-    print(amount)
     back_button = InlineKeyboardButton(text="Назад", callback_data="get_products")
     
     builder.row(*create_product_pagination_buttons(amount), width=3)

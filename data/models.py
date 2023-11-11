@@ -2,9 +2,9 @@ import asyncio
 from datetime import datetime, timedelta
 from pytz import timezone
 
-from sqlalchemy import Column, String, DateTime, BigInteger, Numeric, func, FetchedValue, Integer, Text
+from sqlalchemy import Column, String, DateTime, BigInteger, Numeric, func, FetchedValue, Integer, Text, ForeignKey
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 from data.config import ALCHEMY_DATABASE_URL
 
@@ -19,6 +19,7 @@ class User(Base):
     balance = Column(Numeric(8, 2), default=0)
     role = Column(String, default='User')
     created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp() + timedelta(hours=3))
+    products = relationship("Product", back_populates="user")  # связь с продуктами
 
 
 class Product(Base):
@@ -28,8 +29,9 @@ class Product(Base):
     price = Column(Numeric(8, 2), default=0)
     amount = Column(Integer, nullable=False)
     description = Column(Text, default='')
-    uploader = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp() + timedelta(hours=3))
+    uploader_id = Column(BigInteger, ForeignKey('users.id'))
+    user = relationship("User", back_populates="products")  # обратная связь с пользователем
 
 
 engine = create_async_engine(
@@ -48,7 +50,7 @@ AsyncSessionLocal = sessionmaker(
 
 async def create_tables():
     async with engine.begin() as conn:
-        # await conn.run_sync(Base.metadata.drop_all, checkfirst=True)  # DEBUG MODE
+        await conn.run_sync(Base.metadata.drop_all, checkfirst=True)  # DEBUG MODE
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
 
 

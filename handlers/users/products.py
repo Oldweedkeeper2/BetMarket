@@ -10,6 +10,7 @@ from data.methods.products import ProductSQL
 from data.models import Product
 from keyboards.inline.products import paginator, Pagination, ProductData, get_product_keyboard, \
     ProductPagination
+from utils.misc.clear_chat import clear_chat
 
 router = Router()
 
@@ -41,10 +42,14 @@ async def handle(call: CallbackQuery, callback_data: Pagination):
 @router.callback_query(F.data == 'get_products')
 async def handle(call: CallbackQuery, state: FSMContext):
     product_list = await ProductSQL.get_all_product()
-    await call.message.answer(
+    msg = await call.message.answer(
             text='<b>Выберите товар: Можно поставить сюда продающий текст или условия какие-нибудь</b>',
             reply_markup=paginator(product_list=product_list)
     )
+    data = await state.get_data()
+    await clear_chat(data=data)
+    data['items_to_del'].append(msg)
+    await state.update_data(data)
 
 
 def get_product_text(product: Product) -> str:  # вынести в файл с utils
@@ -61,12 +66,10 @@ async def handle(call: CallbackQuery, state: FSMContext, callback_data: ProductD
     product_text = get_product_text(product)
     data = await state.get_data()
     has_in_cart: dict = data['cart'].get(product_id, None)
-    print('has_in_cart', has_in_cart)
     if not has_in_cart:
         amount = 0
         data['cart'].setdefault(product_id, amount)
     else:
-        print("data['cart']", data['cart'])
         amount = data['cart'][product_id]
     keyboard = get_product_keyboard(amount)
     with suppress(TelegramBadRequest):

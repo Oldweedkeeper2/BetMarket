@@ -1,5 +1,3 @@
-from contextlib import suppress
-
 from aiogram import Router, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import CommandStart
@@ -11,6 +9,7 @@ from filters.admin_filter import AdminFilter
 from filters.manager_filter import ManagerFilter
 from keyboards.inline.start import get_role_start_keyboard
 from utils.misc.clear_chat import clear_chat
+import logging
 
 router = Router()
 
@@ -26,36 +25,39 @@ def get_user_data(message: Message):  # Вынести вспомогатель�
 
 async def main_menu(message: Message, state: FSMContext, role: str):
     data = await state.get_data()
-    await state.clear()
     
     if role == 'Пользователь':
         await UserSQL.add(get_user_data(message))
     
     keyboard = get_role_start_keyboard(role=role)
-    with suppress(TelegramBadRequest):
+    
+    msg = None
+    try:
         msg = await message.answer(f'Ваш статус: {role}', reply_markup=keyboard)
-    
-    await message.delete()
-    
-    await clear_chat(data=data, chat_id=int(message.from_user.id))
-    data.setdefault('items_to_del', [])
-    data.setdefault('cart', {})
-    data['items_to_del'].append(msg)
+    except TelegramBadRequest as e:
+        logging.warning(e)
+    await clear_chat(data=data)
+    data.setdefault('cart', {3: 2, 5: 4})
+    data['items_to_del'].append(msg) if msg else None
     await state.update_data(data)
 
 
 @router.message(CommandStart(), AdminFilter())
 async def handle(message: Message, state: FSMContext):
+    await message.delete()
+    print('1')
     await main_menu(message, state, 'Админ')
 
 
 @router.message(CommandStart(), ManagerFilter())
 async def handle(message: Message, state: FSMContext):
+    await message.delete()
     await main_menu(message, state, 'Менеджер')
 
 
 @router.message(CommandStart())
 async def handle(message: Message, state: FSMContext):
+    await message.delete()
     await main_menu(message, state, 'Пользователь')
 
 
