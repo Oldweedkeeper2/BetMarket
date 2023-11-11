@@ -19,11 +19,14 @@ env.read_env()
 BOT_TOKEN: str = env.str("BOT_TOKEN")
 
 ALCHEMY_DATABASE_URL: str = env.str("ALCHEMY_DATABASE_URL")
-# # Использовать ли вебхук
-# USE_WEBHOOK: bool = env.bool("USE_WEBHOOK", False)
-#
-# # Использовать ли SSL
-# USE_SSL: bool = env.bool("USE_SSL", False)
+# Использовать ли вебхук
+USE_WEBHOOK: bool = env.bool("USE_WEBHOOK", False)
+
+# Использовать ли SSL
+USE_SSL: bool = env.bool("USE_SSL", False)
+
+PAGE_WIDTH = 10
+
 #
 # # Если используется вебхук
 # if USE_WEBHOOK:

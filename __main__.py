@@ -123,7 +123,7 @@ def main():
         asyncio.run(dispatcher.start_polling(bot,  # Экземпляр бота
                                              # список типов обновлений, которые бот будет получать ['message', 'chat_member']
                                              # при dp.resolve_used_update_types() aiogram пройдётся по роутерам и сам составит список
-                                             allowed_updates=['message', 'chat_member'],
+                                             allowed_updates=dispatcher.resolve_used_update_types(),
                                              # закрывать сеансы бота при выключении
                                              close_bot_session=True))
 
