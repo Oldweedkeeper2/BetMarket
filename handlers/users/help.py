@@ -18,6 +18,6 @@ async def handle(call: CallbackQuery, state: FSMContext) -> Any:
             reply_markup=get_start_keyboard()
     )
     data = await state.get_data()
-    await clear_chat(data=data, chat_id=int(call.from_user.id))
+    await clear_chat(data=data)
     data['items_to_del'].append(msg)
     await state.update_data(data)

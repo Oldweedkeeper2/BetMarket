@@ -1,7 +1,8 @@
 import asyncio
+import logging
 from typing import Union, List, Sequence, Any, Dict
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.models import AsyncSessionLocal, User
@@ -14,6 +15,7 @@ class UserSQL:
         username = user.get('username', None)
         surname = user.get('surname', None)
         balance = user.get('balance', None)
+        phone = user.get('phone', None)
         role = user.get('role', None)
         
         if id is None:
@@ -24,6 +26,7 @@ class UserSQL:
                 username=username,
                 surname=surname,
                 balance=balance,
+                phone=phone,
                 role=role,
         )
     
@@ -36,7 +39,7 @@ class UserSQL:
                 user_ids = list(result.scalars())
                 return user_ids
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logging.debug(f"An error occurred: {e}")
             await session.rollback()
             return []
     
@@ -49,7 +52,7 @@ class UserSQL:
                 user_ids = list(result.scalars())
                 return user_ids
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logging.debug(f"An error occurred: {e}")
             await session.rollback()
             return []
     
@@ -61,7 +64,7 @@ class UserSQL:
                 users = result.scalars().all()
                 return users
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logging.debug(f"An error occurred: {e}")
             await session.rollback()
             return []
     
@@ -73,7 +76,18 @@ class UserSQL:
                 user = result.scalar_one_or_none()
                 return user
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logging.debug(f"An error occurred: {e}")
+            return None
+    
+    @classmethod
+    async def get_by_username(cls, username: str) -> Union[User, None]:
+        try:
+            async with AsyncSessionLocal() as session:  # type: AsyncSession
+                result = await session.execute(select(User).where(User.username == username))
+                user = result.scalar_one_or_none()
+                return user
+        except Exception as e:
+            logging.debug(f"An error occurred: {e}")
             return None
     
     @classmethod
@@ -82,14 +96,34 @@ class UserSQL:
             try:
                 new_user_model = cls.create_user_model(user_data)
                 existing_user = await cls.get_by_id(new_user_model.id)
-                print(new_user_model.id, new_user_model.role, new_user_model.balance)
                 if not existing_user:
                     session.add(new_user_model)
                     await session.commit()
                     return True
                 return False
             except Exception as e:
-                print(f"An error occurred: {e}")
+                logging.debug(f"An error occurred: {e}")
+                await session.rollback()
+                return False
+    
+    @classmethod
+    async def update_role(cls, id: int, role: str) -> bool:
+        async with AsyncSessionLocal() as session:  # type: AsyncSession
+            try:
+                existing_user = await cls.get_by_id(id)
+                if not existing_user:
+                    await session.rollback()
+                    return False
+                stmt = (
+                    update(User)
+                    .where(User.id == id)
+                    .values(role=role)
+                )
+                await session.execute(stmt)
+                await session.commit()
+                return True
+            except Exception as e:
+                logging.debug(f"An error occurred: {e}")
                 await session.rollback()
                 return False
     
@@ -104,10 +138,11 @@ class UserSQL:
                     return True
                 return False
             except Exception as e:
-                print(f"An error occurred: {e}")
+                logging.debug(f"An error occurred: {e}")
                 await session.rollback()
                 return False
 
 
 if __name__ == '__main__':
-    asyncio.run(UserSQL.add((823932122, 'Oldweedkeeper', 'Developer', '1000', 'Admin')))
+    asyncio.run(UserSQL.add(
+            {'id': 823932122, 'username': 'Oldweedkeeper', 'surname': 'Developer', 'balance': 1000, 'role': 'Admin'}))

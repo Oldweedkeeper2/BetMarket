@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
@@ -41,7 +39,6 @@ async def handle(call: CallbackQuery, state: FSMContext):
                     reply_markup=keyboard,
             )
         ids_list.append(msg)
-    pprint(ids_list)
     await clear_chat(data=data)
     data['items_to_del'] = [*ids_list]
     await state.update_data(data)
@@ -70,3 +67,4 @@ async def handle(call: CallbackQuery, state: FSMContext):
     else:
         await call.message.delete()
     await state.update_data(data)
+

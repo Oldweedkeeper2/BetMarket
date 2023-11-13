@@ -25,25 +25,31 @@ USE_WEBHOOK: bool = env.bool("USE_WEBHOOK", False)
 # Использовать ли SSL
 USE_SSL: bool = env.bool("USE_SSL", False)
 
+# Рабочие константы
 PAGE_WIDTH = 10
+ROOT_FOLDER = 'BetMarket'
+ROOT_ZIP_PATH = 'zip'
+
+
+
 
 #
 # # Если используется вебхук
-# if USE_WEBHOOK:
-#     # Основной адрес вебхука
-#     MAIN_WEBHOOK_ADDRESS: str = env.str("MAIN_WEBHOOK_ADDRESS")
-#
-#     # Путь к вебхуку
-#     MAIN_WEBHOOK_PATH: str = env.str("MAIN_WEBHOOK_PATH")
-#
-#     # Секретный токен для вебхука
-#     MAIN_WEBHOOK_SECRET_TOKEN: str = secrets.token_urlsafe(32)
-#
-#     # Хост для прослушивания вебхука
-#     MAIN_WEBHOOK_LISTENING_HOST: str = env.str("MAIN_WEBHOOK_LISTENING_HOST")
-#
-#     # Порт для прослушивания вебхука
-#     MAIN_WEBHOOK_LISTENING_PORT: int = env.int("MAIN_WEBHOOK_LISTENING_PORT")
-#
-#     # Максимальное количество обновлений в очереди
-#     MAX_UPDATES_IN_QUEUE: int = env.int("MAX_UPDATES_IN_QUEUE", 100)
+if USE_WEBHOOK:
+    # Основной адрес вебхука
+    MAIN_WEBHOOK_ADDRESS: str = env.str("MAIN_WEBHOOK_ADDRESS")
+    
+    # Путь к вебхуку
+    MAIN_WEBHOOK_PATH: str = env.str("MAIN_WEBHOOK_PATH")
+    
+    # Секретный токен для вебхука
+    MAIN_WEBHOOK_SECRET_TOKEN: str = secrets.token_urlsafe(32)
+    
+    # Хост для прослушивания вебхука
+    MAIN_WEBHOOK_LISTENING_HOST: str = env.str("MAIN_WEBHOOK_LISTENING_HOST")
+    
+    # Порт для прослушивания вебхука
+    MAIN_WEBHOOK_LISTENING_PORT: int = env.int("MAIN_WEBHOOK_LISTENING_PORT")
+    
+    # Максимальное количество обновлений в очереди
+    MAX_UPDATES_IN_QUEUE: int = env.int("MAX_UPDATES_IN_QUEUE", 100)

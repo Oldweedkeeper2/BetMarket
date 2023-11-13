@@ -42,6 +42,7 @@ async def handle(call: CallbackQuery, callback_data: Pagination):
 @router.callback_query(F.data == 'get_products')
 async def handle(call: CallbackQuery, state: FSMContext):
     product_list = await ProductSQL.get_all_product()
+    print(product_list)
     msg = await call.message.answer(
             text='<b>Выберите товар: Можно поставить сюда продающий текст или условия какие-нибудь</b>',
             reply_markup=paginator(product_list=product_list)

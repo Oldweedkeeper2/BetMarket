@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from data.methods.users import UserSQL
+from data.models import User
 from filters.admin_filter import AdminFilter
 from filters.manager_filter import ManagerFilter
 from keyboards.inline.start import get_role_start_keyboard
@@ -23,17 +24,24 @@ def get_user_data(message: Message):  # Вынести вспомогатель�
     return user
 
 
+def get_main_menu_text(user: User):
+    return f'<b>Ваш статус:</b> {user.role}\n\n' \
+           f'<b>Баланс:</b> {user.balance}\n\n'
+
+
 async def main_menu(message: Message, state: FSMContext, role: str):
     data = await state.get_data()
-    
+    await state.clear()
     if role == 'Пользователь':
         await UserSQL.add(get_user_data(message))
     
+    user = await UserSQL.get_by_id(id=int(message.chat.id))
+    main_menu_text = get_main_menu_text(user)
     keyboard = get_role_start_keyboard(role=role)
-    
     msg = None
+    
     try:
-        msg = await message.answer(f'Ваш статус: {role}', reply_markup=keyboard)
+        msg = await message.answer(text=main_menu_text, reply_markup=keyboard)
     except TelegramBadRequest as e:
         logging.warning(e)
     await clear_chat(data=data)

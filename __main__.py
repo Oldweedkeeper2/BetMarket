@@ -5,6 +5,7 @@ from aiogram.client.session.middlewares.request_logging import RequestLogging, l
 from aiohttp import web
 
 
+
 def setup_handlers(dispatcher: Dispatcher) -> None:
     """HANDLERS"""
     from handlers import setup_routers
