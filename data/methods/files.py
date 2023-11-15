@@ -89,3 +89,6 @@ class FileSQL:
                 logging.debug(f"An error occurred while adding files: {e}")
                 await session.rollback()
                 return False
+    
+    # @classmethod
+    # async def get

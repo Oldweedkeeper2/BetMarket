@@ -4,6 +4,7 @@ from datetime import timedelta
 from sqlalchemy import Column, String, DateTime, BigInteger, Numeric, func, Integer, Text, ForeignKey
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy.testing.schema import Table
 
 from data.config import ALCHEMY_DATABASE_URL
 
@@ -20,6 +21,28 @@ class User(Base):
     role = Column(String, default='User')
     created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp() + timedelta(hours=3))
     products = relationship("Product", back_populates="user")  # связь с продуктами
+    orders = relationship("Order", back_populates="user")
+
+
+# Вспомогательная таблица для связи многие ко многим между Order и Product
+order_items = Table('order_items', Base.metadata,
+                    Column('order_id', BigInteger, ForeignKey('orders.id'), primary_key=True),
+                    Column('product_id', BigInteger, ForeignKey('products.id'), primary_key=True),
+                    Column('quantity', Integer, nullable=False, default=1)
+                    )
+
+
+class Order(Base):
+    __tablename__ = 'orders'
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp() + timedelta(hours=3))
+    user_id = Column(BigInteger, ForeignKey('users.id'))
+    
+    # Связь с User
+    user = relationship("User", back_populates="orders")
+    
+    # Связь с Product через вспомогательную таблицу
+    products = relationship("Product", secondary=order_items, back_populates="orders")
 
 
 class Product(Base):
@@ -34,6 +57,7 @@ class Product(Base):
     uploader_id = Column(BigInteger, ForeignKey('users.id'))
     user = relationship("User", back_populates="products")  # обратная связь с пользователем
     accounts = relationship("Account", back_populates="product")
+    orders = relationship("Order", secondary=order_items, back_populates="products")
 
 
 class Account(Base):
@@ -64,9 +88,9 @@ class File(Base):
 
 engine = create_async_engine(
         ALCHEMY_DATABASE_URL,
-        echo=False,  # DEBUG  # включает логирование SQL-запросов (для отладки).
+        echo=True,  # DEBUG  # включает логирование SQL-запросов (для отладки).
         pool_size=10,  # Минимальное количество соединений в пуле
-        max_overflow=30  # Максимальное количество соединений в пуле
+        max_overflow=50  # Максимальное количество соединений в пуле
 )
 # Создание асинхронной сессии
 AsyncSessionLocal = sessionmaker(
@@ -78,7 +102,7 @@ AsyncSessionLocal = sessionmaker(
 
 async def create_tables():
     async with engine.begin() as conn:
-        # await conn.run_sync(Base.metadata.drop_all, checkfirst=True)  # DEBUG MODE
+        await conn.run_sync(Base.metadata.drop_all, checkfirst=True)  # DEBUG MODE
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
 
 

@@ -1,5 +1,6 @@
+import asyncio
 import logging
-from typing import Dict, Sequence, List, Union
+from typing import Dict, Sequence, List, Union, Optional
 
 from sqlalchemy import delete, select
 
@@ -55,10 +56,15 @@ class AccountSQL:
                 return False
     
     @classmethod
-    async def delete_account(cls, id: int) -> bool:
+    async def delete_account(cls, accounts: Union[Account, List[Account]]) -> bool:
         async with AsyncSessionLocal() as session:
             try:
-                await session.execute(delete(Account).where(Account.id == id))
+                if isinstance(accounts, Account):
+                    accounts = [accounts]
+                
+                for account in accounts:
+                    await session.delete(account)
+                
                 await session.commit()
                 return True
             except Exception as e:

@@ -66,7 +66,10 @@ async def handle(message: Message, state: FSMContext):
         await handle_product_file(product_id=product_id,
                                   file_path=local_file_path,
                                   relative_path=relative_path,
-                                  is_zip=is_zip)
+                                  is_zip=is_zip,
+                                  is_add=False)
+        # TODO: Сделать is_add принимаемым параметром после создания формы добавления\обновления товара
+        
     except Exception as e:
         await message.delete()
         await message.answer(text='Не удалось скачать файл. Попробуйте ещё раз', reply_markup=keyboard)

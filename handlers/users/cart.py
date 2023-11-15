@@ -24,6 +24,9 @@ async def handle(call: CallbackQuery, state: FSMContext):
     
     for product_id in cart:
         product = await ProductSQL.get_by_id(product_id)
+        if not product:
+            await call.answer('Такого продукта нет в наличии')
+            return
         keyboard = cart_product_keyboard(product=product)
         
         msg = await call.bot.send_message(
@@ -67,4 +70,3 @@ async def handle(call: CallbackQuery, state: FSMContext):
     else:
         await call.message.delete()
     await state.update_data(data)
-
