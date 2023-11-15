@@ -20,6 +20,7 @@ class FileManager:
     
     @classmethod
     async def read_file(cls, file_path: Union[str, Path]) -> List[str]:
+        # TODO: Согласовать разделитель аккаунтов
         async with aiofiles.open(file_path, mode='r') as file:
             content = await file.read()
         return content.split(';')
@@ -51,11 +52,12 @@ class FileManager:
 
 
 class ProductFileProcessor(FileManager):
-    def __init__(self, product_id: int, root_zip_path: Union[str, Path]):
+    def __init__(self, product_id: int, root_zip_path: Union[str, Path], is_add: bool = False):
         self.product_id = product_id
         self.root_zip_path = Path(root_zip_path)
+        self.id_add = is_add
     
-    async def process_text_file(self, product_file_path: Union[str, Path], is_add: bool) -> Exception:
+    async def process_text_file(self, product_file_path: Union[str, Path]) -> None:
         accounts = await self.read_file(product_file_path)
         for id, account in enumerate(accounts, start=1):
             if account:
@@ -75,9 +77,11 @@ class ProductFileProcessor(FileManager):
                 await self.add_file_to_db(zip_destination, account_id)
                 await self.delete_file_async(simple_account_path)
         if accounts:
-            await ProductSQL.update_product_amount(product_id=self.product_id, amount=len(accounts), is_add=is_add)
+            await ProductSQL.update_product_amount(product_id=self.product_id,
+                                                   amount=len(accounts),
+                                                   is_add=self.id_add)
     
-    async def process_unzipped_files(self, product_folder: Union[str, Path], is_add: bool) -> None:
+    async def process_unzipped_files(self, product_folder: Union[str, Path]) -> None:
         count_accounts = 0
         product_folder_path = Path(product_folder)
         
@@ -95,7 +99,9 @@ class ProductFileProcessor(FileManager):
                 delete_product_folder(account_folder=account_folder.name, root_zip_path=self.root_zip_path)
         
         if count_accounts > 0:
-            await ProductSQL.update_product_amount(product_id=self.product_id, amount=count_accounts, is_add=is_add)
+            await ProductSQL.update_product_amount(product_id=self.product_id,
+                                                   amount=count_accounts,
+                                                   is_add=self.id_add)
     
     async def add_account(self, account_name: str) -> int | bool:
         account_data = {'account_name': account_name, 'product_id': self.product_id}
@@ -140,19 +146,15 @@ async def handle_product_file(product_id: int,
                               relative_path: dict, is_zip: bool = False,
                               is_add: bool = False) -> None:
     processor = ProductFileProcessor(product_id,
-                                     create_product_folder(product_id, relative_path['ACCOUNTS_PATH']))
+                                     create_product_folder(product_id, relative_path['ACCOUNTS_PATH']),
+                                     is_add)
     
     if is_zip:
         await unzip_command_handler(path_to_zip_file=file_path, path_to_extract=str(processor.root_zip_path))
-        await processor.process_unzipped_files(processor.root_zip_path, is_add=is_add)
+        await processor.process_unzipped_files(processor.root_zip_path)
     else:
         logging.debug('processing text file'.upper())
-        await processor.process_text_file(file_path, is_add=is_add)
-
-
-#
-#
-# key = product_id, value = amount
+        await processor.process_text_file(file_path)
 
 
 # У нас есть корзина, которая содержит идентификаторы продуктов и их количество. Мы должны взять один product_id
@@ -215,7 +217,7 @@ class ProductBuyProcessor(FileManager):
                 str(order_id))
         self.accounts_path = relative_path['ACCOUNTS_PATH']
     
-    async def handle_buy_product(self):
+    async def handle_buy_product(self) -> str:
         for product_id, amount in self.cart_data.items():
             logging.debug(f'{product_id} {amount}')
             # Получение информации о продукте
@@ -224,15 +226,13 @@ class ProductBuyProcessor(FileManager):
             # Проверка наличия продукта
             if not product or int(product.amount) < int(amount):
                 logging.warning(f"Недостаточно товара с ID {product_id} в наличии.")
-                continue
+                return
             
             self.create_directory(self.zipped_files_sent_path)
             # Выбор случайных аккаунтов
-            logging.debug(f'{product.accounts}\n {amount}')
             selected_accounts = random.sample(product.accounts, amount)
-            logging.debug(self.accounts_path)
             logging.debug(selected_accounts[0].files[0].file_path)
-            path_list = [f'{self.accounts_path[:3]}{account.files[0].file_path}' for account in
+            path_list = [f'{account.files[0].file_path}' for account in
                          selected_accounts]
             
             await AccountSQL.delete_account(selected_accounts)
@@ -249,6 +249,7 @@ class ProductBuyProcessor(FileManager):
             return str(zip_order_path)
 
 # Пример использования
+# key = product_id, value = amount
 # cart_data = {3: 2}
 # order_id = 14
 # relative_path = generate_dynamic_zip_path()

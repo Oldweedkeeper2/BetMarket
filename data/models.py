@@ -36,6 +36,8 @@ class Order(Base):
     __tablename__ = 'orders'
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp() + timedelta(hours=3))
+    cart_sum = Column(Numeric(8, 2), default=0)
+    
     user_id = Column(BigInteger, ForeignKey('users.id'))
     
     # Связь с User

@@ -128,6 +128,27 @@ class UserSQL:
                 return False
     
     @classmethod
+    async def update_balance(cls, id: int, amount: float) -> bool:
+        async with AsyncSessionLocal() as session:  # type: AsyncSession
+            try:
+                existing_user = await cls.get_by_id(id)
+                if not existing_user:
+                    await session.rollback()
+                    return False
+                stmt = (
+                    update(User)
+                    .where(User.id == id)
+                    .values(balance=User.balance + amount)
+                )
+                await session.execute(stmt)
+                await session.commit()
+                return True
+            except Exception as e:
+                logging.debug(f"An error occurred: {e}")
+                await session.rollback()
+                return False
+    
+    @classmethod
     async def delete(cls, id: int) -> bool:
         async with AsyncSessionLocal() as session:  # type: AsyncSession
             try:

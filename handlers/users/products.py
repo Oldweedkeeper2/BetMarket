@@ -60,6 +60,14 @@ def get_product_text(product: Product) -> str:  # вынести в файл с 
             f"<b>Оставшееся количество:</b> {product.amount}\n")
 
 
+def get_cart_product_text(product: Product, amount: int) -> str:  # вынести в файл с utils
+    return (f"<b>Название:</b> {product.name}\n"
+            f"<b>Описание:</b> {product.description or 'Нет описания'}\n"
+            f"<b>Стоимость:</b> {product.price or 0} $\n"
+            f"<b>Оставшееся количество:</b> {product.amount}\n"
+            f"<b>Выбранное количество:</b> {amount}\n")
+
+
 @router.callback_query(ProductData.filter(F.id))
 async def handle(call: CallbackQuery, state: FSMContext, callback_data: ProductData):
     product_id = callback_data.id

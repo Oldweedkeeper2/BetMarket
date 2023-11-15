@@ -1,30 +1,45 @@
-import asyncio
+from typing import Union, Optional, Sequence
 
-from sqlalchemy import select, update, delete
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, update, delete, insert
 from sqlalchemy.exc import SQLAlchemyError
-from typing import Union, List, Optional, Sequence
-
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from data.models import AsyncSessionLocal, Order, Product, Account
+from data.models import AsyncSessionLocal, Order, order_items
 
 
 class OrderSQL:
     @classmethod
-    async def add(cls, order_data: dict) -> Union[Order, None]:
-        """
-        Добавление нового заказа.
-        """
-        try:
-            async with AsyncSessionLocal() as session:  # type: AsyncSession
-                new_order = Order(**order_data)
+    def create_order_model(cls, user_id: int, cart_sum: float) -> Order:
+        return Order(
+                user_id=user_id,
+                cart_sum=cart_sum
+        )
+    
+    @classmethod
+    async def add(cls, user_id: int, cart_sum: float, cart_items: dict) -> Union[Order, None]:
+        async with AsyncSessionLocal() as session:  # type: AsyncSession
+            try:
+                # Создание заказа
+                new_order = cls.create_order_model(user_id, cart_sum)
                 session.add(new_order)
+                await session.flush()  # Получаем order_id для нового заказа
+                
+                # Добавление элементов заказа
+                for product_id, quantity in cart_items.items():
+                    await session.execute(
+                            insert(order_items).values(
+                                    order_id=new_order.id,
+                                    product_id=product_id,
+                                    quantity=quantity
+                            )
+                    )
+                
                 await session.commit()
                 return new_order
-        except SQLAlchemyError as e:
-            await session.rollback()
-            return None
+            except SQLAlchemyError as e:
+                await session.rollback()
+                return None
     
     @classmethod
     async def delete_by_id(cls, id: int) -> Union[bool, Exception]:

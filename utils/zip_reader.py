@@ -19,7 +19,6 @@ async def async_zip_extractor(zip_path: str, extract_to: str, executor: ThreadPo
 async def unzip_command_handler(path_to_zip_file: str, path_to_extract: str) -> None:
     with ThreadPoolExecutor() as executor:
         await async_zip_extractor(path_to_zip_file, path_to_extract, executor)
-        print("Файлы разархивированы в ZIP.")
 
 
 async def async_zip_archiver(files_to_zip: List[str], zip_path: str, executor: ThreadPoolExecutor) -> None:
@@ -40,7 +39,6 @@ async def async_zip_archiver(files_to_zip: List[str], zip_path: str, executor: T
 async def zip_command_handler(files_to_zip: List[str], zip_destination: str) -> None:
     with ThreadPoolExecutor() as executor:
         await async_zip_archiver(files_to_zip, zip_destination, executor)
-        print("Файлы архивированы в ZIP.")
 
 # TODO: При добавлении товара менеджером, ему присваивается product.id, и создаётся папка с именем {product.id}
 #  для этого товара. Если товар - архив, то он разархивируется в папку с именем {product.id} с сохранением имён папок

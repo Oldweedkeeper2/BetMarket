@@ -45,7 +45,7 @@ async def main_menu(message: Message, state: FSMContext, role: str):
     except TelegramBadRequest as e:
         logging.warning(e)
     await clear_chat(data=data)
-    data.setdefault('cart', {3: 2, 5: 4})
+    data.setdefault('cart', {2: 2})
     data['items_to_del'].append(msg) if msg else None
     await state.update_data(data)
 
@@ -53,7 +53,6 @@ async def main_menu(message: Message, state: FSMContext, role: str):
 @router.message(CommandStart(), AdminFilter())
 async def handle(message: Message, state: FSMContext):
     await message.delete()
-    print('1')
     await main_menu(message, state, 'Админ')
 
 

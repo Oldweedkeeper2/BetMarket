@@ -1,14 +1,11 @@
 import logging
-
-from sqlalchemy.orm import joinedload, selectinload
-
-from data.models import AsyncSessionLocal, Product, Account
-
-import asyncio
-from typing import Union, List, Sequence, Any, Dict
+from typing import Union, List, Sequence, Dict
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+
+from data.models import AsyncSessionLocal, Product, Account
 
 
 class ProductSQL:
@@ -77,6 +74,21 @@ class ProductSQL:
                 return False
     
     @classmethod
+    async def get_cart_sum(cls, cart_items: Dict) -> float:
+        async with AsyncSessionLocal() as session:  # type: AsyncSession
+            try:
+                result = await session.execute(select(Product)
+                                               .where(Product.id.in_(cart_items.keys())))
+                result = result.scalars()
+                sum_result = sum([float(product.price * cart_items[product.id]) for product in result])  # type: float
+                return sum_result
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                logging.debug(f"An error occurred: {e}")
+                await session.rollback()
+                return 0.0  # Возвращаем 0.0 в случае ошибки
+    
+    @classmethod
     async def update_product_amount(cls, product_id: int, amount: int, is_add: bool = False) -> bool:
         async with AsyncSessionLocal() as session:
             try:
@@ -88,6 +100,7 @@ class ProductSQL:
                 
                 if product:
                     product.amount += amount if is_add else amount  # Увеличиваем количество
+                    print('product.amount', product.amount)
                     await session.commit()
                     return True
                 else:
