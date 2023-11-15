@@ -5,7 +5,7 @@ from data.config import ROOT_FOLDER
 
 def generate_dynamic_zip_path(root_folder=ROOT_FOLDER):
     """Генерирует динамический путь к папке BetMarket/zip."""
-    
+    # TODO: в будущем изменить на абсолютный путь, а не относительный
     def find_relative_path_to_root(current_path):
         """Находит относительный путь к корневой папке."""
         depth = 0
