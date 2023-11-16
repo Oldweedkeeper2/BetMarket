@@ -64,7 +64,9 @@ def create_product_pagination_buttons(amount: int):
 def get_product_keyboard(amount: int = 0):
     builder = InlineKeyboardBuilder()
     back_button = InlineKeyboardButton(text="Назад", callback_data="get_products")
+    start_button = InlineKeyboardButton(text="Главная", callback_data="start")
     
     builder.row(*create_product_pagination_buttons(amount), width=3)
     builder.row(back_button, width=1)
+    builder.row(start_button, width=1)
     return builder.as_markup()

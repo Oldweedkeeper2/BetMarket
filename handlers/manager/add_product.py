@@ -1,50 +1,159 @@
 import os.path
+from typing import Optional, Union
 
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, ContentType as CT, Message
+from aiogram.utils.markdown import hbold, markdown_decoration
 
 from data.methods.products import ProductSQL
+from data.models import Product
 from keyboards.inline.manager.add_products import get_back_keyboard
-from states.manager.add_product import FileState
+from states.manager.add_product import ProductState
 from utils.account_sorter import handle_product_file
 from utils.generate_dynamic_path import generate_dynamic_zip_path
 from utils.misc.clear_chat import clear_chat
 import logging
 
 router = Router()
+NAME = 'name'
+PRICE = 'price'
+DESCRIPTION = 'description'
+MEDIA = 'product_media_group'
+CURRENCY_SYMBOL = '$'  # TODO: вынести в конфиг
 
 
 # router.message.middleware(MediaCatcher()) для нескольких файлов одновременно
+
+async def get_product_text(state: FSMContext, end_text: Optional[str] = None, start_text: Optional[str] = None) -> str:
+    """Получить текстовое представление информации о продукте."""
+    data = await state.get_data()
+    product_data = data.get('product', {})
+    name = product_data.get(NAME, '❌')
+    price = product_data.get(PRICE, '❌')
+    description = product_data.get(DESCRIPTION, '❌')
+    
+    text = (f'Название:      {name}\n'
+            f'Описание:     {description}\n'
+            f'Цена:               {price} {CURRENCY_SYMBOL}\n')
+    if start_text:
+        text = f'❗ {hbold(start_text)}\n\n{text}'
+    if end_text:
+        text += '\n\n' + end_text
+    return text
+
+
+async def write_product_data(state: FSMContext, item: Union[str, float], item_name: str) -> None:
+    data = await state.get_data()
+    data.setdefault('product', {})
+    data['product'][item_name] = item
+    await state.update_data(data)
 
 
 @router.callback_query(F.data == 'add_new_product')
 async def handle(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     keyboard = get_back_keyboard()
-    msg = await call.message.answer(text='<b>Отправьте текстовый документ или zip-aрхив</b>\n\n'
-                                         '<i>Проверьте соответствие формату заполнения:\n'
-                                         '\t ❕ Для текстовых - строки с разеделителем (указать разделитель!)\n'
-                                         '\t ❕ Для zip-архивов - zip-архив с расширением .zip и каждый аккаунт в своей папке</i>',
+    text = await get_product_text(state=state,
+                                  start_text='Заполните поля, чтобы добавить новый продукт',
+                                  end_text='Введите название товара:')
+    msg = await call.message.answer(text=text,
                                     reply_markup=keyboard)
     await clear_chat(data=data)
     data['items_to_del'].append(msg)
     await state.update_data(data)
-    await state.set_state(FileState.upload_file)
+    await state.set_state(ProductState.name)
 
 
-def get_test_product_data(message):
-    return {
-        'name': 'Тестовое имя',
-        'description': 'Тестовое описание',
-        'price': 100,
-        'amount': 100,
-        'uploader_id': message.from_user.id,
-        'file_id': message.document.file_id
-    }
+@router.message(ProductState.name)
+async def handle(message: Message, state: FSMContext):
+    await message.delete()
+    data = await state.get_data()
+    keyboard = get_back_keyboard()
+    name = message.text
+    await write_product_data(state=state, item=name, item_name=NAME)
+    text = await get_product_text(state=state,
+                                  start_text='Заполните поля, чтобы добавить новый продукт',
+                                  end_text='Введите описание:')
+    msg = await message.answer(text=text,
+                               reply_markup=keyboard)
+    await clear_chat(data=data)
+    data['items_to_del'].append(msg)
+    await state.update_data(data)
+    await state.set_state(ProductState.description)
 
 
-@router.message(FileState.upload_file, F.content_type == CT.DOCUMENT)
+@router.message(ProductState.description)
+async def handle(message: Message, state: FSMContext):
+    await message.delete()
+    data = await state.get_data()
+    keyboard = get_back_keyboard()
+    description = message.text
+    
+    await write_product_data(state=state, item=description, item_name=DESCRIPTION)
+    text = await get_product_text(state=state,
+                                  start_text='Заполните поля, чтобы добавить новый продукт',
+                                  end_text='Введите цену:')
+    msg = await message.answer(text=text,
+                               reply_markup=keyboard)
+    await clear_chat(data=data)
+    data['items_to_del'].append(msg)
+    await state.update_data(data)
+    await state.set_state(ProductState.price)
+
+
+@router.message(ProductState.price)
+async def handle(message: Message, state: FSMContext):
+    data = await state.get_data()
+    keyboard = get_back_keyboard()
+    try:
+        price = float(message.text)
+    except ValueError:
+        await message.delete()
+        text = await get_product_text(state=state,
+                                      start_text='Заполните поля, чтобы добавить новый продукт',
+                                      end_text='❗ Некорректное значение. Повторите попытку\nЦена должна быть числом')
+        msg = await message.answer(text=text,
+                                   reply_markup=keyboard)
+        await clear_chat(data=data)
+        data['items_to_del'].append(msg)
+        await state.update_data(data)
+        await state.set_state(ProductState.price)
+        return
+    await write_product_data(state=state, item=price, item_name=PRICE)
+    text = await get_product_text(state=state,
+                                  end_text='<b>Отправьте текстовый документ или zip-aрхив</b>\n\n'
+                                           '<i>Проверьте соответствие формату заполнения:\n'
+                                           '\t ❕ Для текстовых - строки с разеделителем (указать разделитель!)\n'
+                                           '\t ❕ Для zip-архивов - zip-архив с расширением .zip и каждый аккаунт в своей папке</i>')
+    msg = await message.answer(text=text,
+                               reply_markup=keyboard)
+    await clear_chat(data=data)
+    data['items_to_del'].append(msg)
+    await state.update_data(data)
+    await state.set_state(ProductState.upload_file)
+
+
+# def get_test_product_data(message):
+#     return {
+#         'name': 'Тестовое имя',
+#         'description': 'Тестовое описание',
+#         'price': 100,
+#         'amount': 100,
+#         'uploader_id': message.from_user.id,
+#         'file_id': message.document.file_id
+#     }
+
+
+def get_full_product_text(product: Product):
+    return f'<b>Название:</b> {product.name}\n' \
+           f'<b>Описание:</b> {product.description}\n' \
+           f'<b>Цена:</b> {product.price}\n' \
+           f'<b>Количество:</b> {product.amount}\n' \
+           f'<b>ID того, кто добавил:</b> {product.uploader_id}\n'
+
+
+@router.message(ProductState.upload_file, F.content_type == CT.DOCUMENT)
 async def handle(message: Message, state: FSMContext):
     data = await state.get_data()
     keyboard = get_back_keyboard()
@@ -53,31 +162,43 @@ async def handle(message: Message, state: FSMContext):
     mime_type = message.document.mime_type
     file_info = await message.bot.get_file(file_id)
     
-    product_data = get_test_product_data(message)
-    product_id = await ProductSQL.add(product_data=product_data)
+    # вынести получение конечного товара в отдельную функцию
+    product_data = data['product']
+    product_data['uploader_id'] = message.from_user.id
+    product_data['file_id'] = file_id
+    
+    product = await ProductSQL.add(product_data=product_data)
     relative_path = generate_dynamic_zip_path()
     
+    if product is None:
+        logging.error('Не удалось добавить продукт')
+        await message.answer(text='Не удалось добавить продукт. Попробуйте ещё раз', reply_markup=keyboard)
+        await state.set_state(ProductState.upload_file)
+        return
     file_extension = 'zip' if mime_type == 'application/zip' else 'txt'
-    local_file_path = os.path.join(relative_path['R_ZIPPED_FILE_PATH'], f'{str(product_id)}.{file_extension}')
+    local_file_path = os.path.join(relative_path['R_ZIPPED_FILE_PATH'], f'{str(product.id)}.{file_extension}')
     
     try:
         await message.bot.download_file(file_info.file_path, destination=local_file_path)
         is_zip = mime_type == 'application/zip'
-        await handle_product_file(product_id=product_id,
+        await handle_product_file(product_id=product.id,
                                   file_path=local_file_path,
                                   relative_path=relative_path,
                                   is_zip=is_zip,
                                   is_add=False)
         # TODO: Сделать is_add принимаемым параметром после создания формы добавления\обновления товара
-        
+    
     except Exception as e:
         await message.delete()
         await message.answer(text='Не удалось скачать файл. Попробуйте ещё раз', reply_markup=keyboard)
         logging.debug(e)
-        await state.set_state(FileState.upload_file)
+        await state.set_state(ProductState.upload_file)
         return
     
-    msg = await message.answer(text='Документ добавлен', reply_markup=keyboard)
+    updated_product = await ProductSQL.get_by_id(id=product.id)
+    text = get_full_product_text(product=updated_product)
+    
+    msg = await message.answer(text=text, reply_markup=keyboard)
     await clear_chat(data=data)
     data['items_to_del'].append(msg)
     await state.update_data(data)

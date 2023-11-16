@@ -13,7 +13,7 @@ class ProductSQL:
     def create_product_model(cls, product: Dict) -> Union[Product, Exception]:
         name = product.get('name', None)
         price = product.get('price', None)
-        amount = product.get('amount', None)
+        amount = product.get('amount', 0)
         description = product.get('description', None)
         uploader_id = product.get('uploader_id', None)
         file_id = product.get('file_id', None)
@@ -61,13 +61,13 @@ class ProductSQL:
             return None
     
     @classmethod
-    async def add(cls, product_data: Dict) -> int | bool:
+    async def add(cls, product_data: Dict) -> Product | bool:
         async with AsyncSessionLocal() as session:  # type: AsyncSession
             try:
                 new_product_model = cls.create_product_model(product_data)
                 session.add(new_product_model)
                 await session.commit()
-                return new_product_model.id
+                return new_product_model
             except Exception as e:
                 print(f"An error occurred: {e}")
                 await session.rollback()

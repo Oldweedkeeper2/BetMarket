@@ -45,8 +45,9 @@ async def main_menu(message: Message, state: FSMContext, role: str):
     except TelegramBadRequest as e:
         logging.warning(e)
     await clear_chat(data=data)
-    data.setdefault('cart', {2: 2})
+    data.setdefault('cart', {})
     data['items_to_del'].append(msg) if msg else None
+    data['product'] = {}
     await state.update_data(data)
 
 

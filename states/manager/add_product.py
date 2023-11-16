@@ -1,5 +1,8 @@
 from aiogram.filters.state import StatesGroup, State
 
 
-class FileState(StatesGroup):
+class ProductState(StatesGroup):
+    name = State()
+    description = State()
+    price = State()
     upload_file = State()
