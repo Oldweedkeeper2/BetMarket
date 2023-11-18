@@ -65,6 +65,11 @@ async def handle(call: CallbackQuery, state: FSMContext):
     await state.set_state(ProductState.name)
 
 
+@router.callback_query(F.data == 'view_products')
+async def handle(call: CallbackQuery, state: FSMContext):
+    await call.answer(text='Раздел "Добавление аккаунтов" находится в разработке', show_alert=True)
+    
+
 @router.message(ProductState.name)
 async def handle(message: Message, state: FSMContext):
     await message.delete()

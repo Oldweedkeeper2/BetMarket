@@ -5,6 +5,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from data.config import PAGE_WIDTH
+from data.models import Product
 
 '''← →'''
 
@@ -32,7 +33,7 @@ def create_pagination_buttons(page: int):
     ]
 
 
-def paginator(product_list: List, page: int = 0):
+def paginator(product_list: List[Product], page: int = 0):
     """Creates a paginated keyboard for product list."""
     builder = InlineKeyboardBuilder()
     start = page * PAGE_WIDTH

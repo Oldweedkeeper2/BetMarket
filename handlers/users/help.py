@@ -4,6 +4,7 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
+from data.config import TECH_SUPPORT_USERNAME
 from keyboards.inline.start import get_start_keyboard
 from utils.misc.clear_chat import clear_chat
 
@@ -14,7 +15,7 @@ router = Router()
 async def handle(call: CallbackQuery, state: FSMContext) -> Any:
     msg = await call.message.answer(
             text="<b>ТЕКСТ ДЛЯ ПОМОЩИ ЗАБЛУБИВШИМСЯ ИЛИ ДЕБИЛАМ\n\n</b>"
-                 f"<b>Лучше всего поставить также контакты менеджера @Oldweedkeeper</b>",
+                 f"<b>Лучше всего поставить также контакты менеджера @{TECH_SUPPORT_USERNAME}</b>",
             reply_markup=get_start_keyboard()
     )
     data = await state.get_data()

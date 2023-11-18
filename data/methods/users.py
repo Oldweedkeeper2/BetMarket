@@ -44,13 +44,26 @@ class UserSQL:
             return []
     
     @classmethod
-    async def get_all_manager(cls) -> List[User] | List:
+    async def get_all_manager_ids(cls) -> List[User] | List:
         try:
             async with AsyncSessionLocal() as session:  # type: AsyncSession
                 result = await session.execute(
                         select(User.id).where(User.role == 'Manager'))  # Укажи параметр, определяющий роль админа
                 user_ids = list(result.scalars())
                 return user_ids
+        except Exception as e:
+            logging.debug(f"An error occurred: {e}")
+            await session.rollback()
+            return []
+    
+    @classmethod
+    async def get_all_managers(cls) -> List[User] | List:
+        try:
+            async with AsyncSessionLocal() as session:  # type: AsyncSession
+                result = await session.execute(
+                        select(User).where(User.role == 'Manager'))  # Укажи параметр, определяющий роль админа
+                managers = list(result.scalars())
+                return managers
         except Exception as e:
             logging.debug(f"An error occurred: {e}")
             await session.rollback()
@@ -128,8 +141,8 @@ class UserSQL:
                 return False
     
     @classmethod
-    async def update_balance(cls, id: int, amount: float) -> bool:
-        async with AsyncSessionLocal() as session:  # type: AsyncSession
+    async def update_balance(cls, id: int, amount: float) -> bool | User:
+        async with (AsyncSessionLocal() as session):  # type: AsyncSession
             try:
                 existing_user = await cls.get_by_id(id)
                 if not existing_user:
@@ -139,6 +152,23 @@ class UserSQL:
                     update(User)
                     .where(User.id == id)
                     .values(balance=User.balance + amount)
+                )
+                await session.execute(stmt)
+                await session.commit()
+                return True
+            except Exception as e:
+                logging.debug(f"An error occurred: {e}")
+                await session.rollback()
+                return False
+    
+    @classmethod
+    async def update_banned(cls, id: int, banned: bool) -> bool | User:
+        async with AsyncSessionLocal() as session:  # type: AsyncSession
+            try:
+                stmt = (
+                    update(User)
+                    .where(User.id == id)
+                    .values(banned=banned)
                 )
                 await session.execute(stmt)
                 await session.commit()

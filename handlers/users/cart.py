@@ -103,6 +103,9 @@ async def handle(call: CallbackQuery, state: FSMContext):
 async def handle(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     product_id = int(call.data.split('_')[-1])
+    if product_id not in data['cart']:
+        await call.answer()
+        return
     data['cart'].pop(product_id)
     if not data['cart']:
         await clear_chat(data=data)

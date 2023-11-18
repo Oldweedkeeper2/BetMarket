@@ -27,11 +27,12 @@ USE_SSL: bool = env.bool("USE_SSL", False)
 
 # Рабочие константы
 PAGE_WIDTH = 10
+USER_PAGE_WIDTH = 30
 ROOT_FOLDER = 'BetMarket'
 ROOT_ZIP_PATH = 'zip'
 
-
-
+ADMIN_USERNAME = 'Oldweedkeeper'
+TECH_SUPPORT_USERNAME = 'Oldweedkeeper'
 
 #
 # # Если используется вебхук

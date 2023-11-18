@@ -1,7 +1,7 @@
 import asyncio
 from datetime import timedelta
 
-from sqlalchemy import Column, String, DateTime, BigInteger, Numeric, func, Integer, Text, ForeignKey
+from sqlalchemy import Column, String, DateTime, BigInteger, Numeric, func, Integer, Text, ForeignKey, Boolean
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy.testing.schema import Table
@@ -19,6 +19,7 @@ class User(Base):
     balance = Column(Numeric(8, 2), default=0)
     phone = Column(String, default='')
     role = Column(String, default='User')
+    banned = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp() + timedelta(hours=3))
     products = relationship("Product", back_populates="user")  # связь с продуктами
     orders = relationship("Order", back_populates="user")
