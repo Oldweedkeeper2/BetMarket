@@ -1,21 +1,23 @@
+import logging
 import os.path
 from typing import Optional, Union
 
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, ContentType as CT, Message
-from aiogram.utils.markdown import hbold, markdown_decoration
+from aiogram.utils.markdown import hbold, hpre, hcode
 
 from data.methods.products import ProductSQL
 from data.models import Product
-from keyboards.inline.manager.add_products import get_back_keyboard
+from keyboards.inline.admin.manage_product import ManageProduct
+from keyboards.inline.manager.manage_product_add import get_back_keyboard
 from states.manager.add_product import ProductState
 from utils.account_sorter import handle_product_file
 from utils.generate_dynamic_path import generate_dynamic_zip_path
 from utils.misc.clear_chat import clear_chat
-import logging
 
 router = Router()
+PRODUCT = 'product'
 NAME = 'name'
 PRICE = 'price'
 DESCRIPTION = 'description'
@@ -33,29 +35,39 @@ async def get_product_text(state: FSMContext, end_text: Optional[str] = None, st
     price = product_data.get(PRICE, '❌')
     description = product_data.get(DESCRIPTION, '❌')
     
-    text = (f'Название:      {name}\n'
-            f'Описание:     {description}\n'
-            f'Цена:               {price} {CURRENCY_SYMBOL}\n')
+    text = (f'Название:            {name}\n'
+            f'Описание:            {description}\n'
+            f'Цена:                {price} {CURRENCY_SYMBOL}\n')
     if start_text:
-        text = f'❗ {hbold(start_text)}\n\n{text}'
+        text = f'❗ {hbold(start_text)}\n\n{hpre(text)}'
     if end_text:
-        text += '\n\n' + end_text
+        text += '\n' + end_text
     return text
 
 
-async def write_product_data(state: FSMContext, item: Union[str, float], item_name: str) -> None:
+async def write_product_data(state: FSMContext, item: Union[str, float], item_name: str,
+                             product_name: str = PRODUCT) -> None:
     data = await state.get_data()
-    data.setdefault('product', {})
-    data['product'][item_name] = item
+    data.setdefault(product_name, {})
+    data[product_name][item_name] = item
     await state.update_data(data)
 
 
-@router.callback_query(F.data == 'add_new_product')
+def get_full_product_text(product: Product):
+    return hcode(f'Название:                  {product.name}\n'
+                 f'Описание:                  {product.description}\n'
+                 f'Цена:                      {product.price}\n'
+                 f'Оставшееся количество:     {product.amount}\n'
+                 f'ID того, кто добавил:      {product.uploader_id}\n')
+
+
+@router.callback_query(ManageProduct.filter(F.action == 'add'))
 async def handle(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     keyboard = get_back_keyboard()
+    data['product'] = {}
     text = await get_product_text(state=state,
-                                  start_text='Заполните поля, чтобы добавить новый продукт',
+                                  start_text='Заполните поля, чтобы добавить новый товар',
                                   end_text='Введите название товара:')
     msg = await call.message.answer(text=text,
                                     reply_markup=keyboard)
@@ -68,7 +80,7 @@ async def handle(call: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == 'view_products')
 async def handle(call: CallbackQuery, state: FSMContext):
     await call.answer(text='Раздел "Добавление аккаунтов" находится в разработке', show_alert=True)
-    
+
 
 @router.message(ProductState.name)
 async def handle(message: Message, state: FSMContext):
@@ -78,7 +90,7 @@ async def handle(message: Message, state: FSMContext):
     name = message.text
     await write_product_data(state=state, item=name, item_name=NAME)
     text = await get_product_text(state=state,
-                                  start_text='Заполните поля, чтобы добавить новый продукт',
+                                  start_text='Заполните поля, чтобы добавить новый товар',
                                   end_text='Введите описание:')
     msg = await message.answer(text=text,
                                reply_markup=keyboard)
@@ -97,7 +109,7 @@ async def handle(message: Message, state: FSMContext):
     
     await write_product_data(state=state, item=description, item_name=DESCRIPTION)
     text = await get_product_text(state=state,
-                                  start_text='Заполните поля, чтобы добавить новый продукт',
+                                  start_text='Заполните поля, чтобы добавить новый товар',
                                   end_text='Введите цену:')
     msg = await message.answer(text=text,
                                reply_markup=keyboard)
@@ -116,7 +128,7 @@ async def handle(message: Message, state: FSMContext):
     except ValueError:
         await message.delete()
         text = await get_product_text(state=state,
-                                      start_text='Заполните поля, чтобы добавить новый продукт',
+                                      start_text='Заполните поля, чтобы добавить новый товар',
                                       end_text='❗ Некорректное значение. Повторите попытку\nЦена должна быть числом')
         msg = await message.answer(text=text,
                                    reply_markup=keyboard)
@@ -139,25 +151,6 @@ async def handle(message: Message, state: FSMContext):
     await state.set_state(ProductState.upload_file)
 
 
-# def get_test_product_data(message):
-#     return {
-#         'name': 'Тестовое имя',
-#         'description': 'Тестовое описание',
-#         'price': 100,
-#         'amount': 100,
-#         'uploader_id': message.from_user.id,
-#         'file_id': message.document.file_id
-#     }
-
-
-def get_full_product_text(product: Product):
-    return f'<b>Название:</b> {product.name}\n' \
-           f'<b>Описание:</b> {product.description}\n' \
-           f'<b>Цена:</b> {product.price}\n' \
-           f'<b>Количество:</b> {product.amount}\n' \
-           f'<b>ID того, кто добавил:</b> {product.uploader_id}\n'
-
-
 @router.message(ProductState.upload_file, F.content_type == CT.DOCUMENT)
 async def handle(message: Message, state: FSMContext):
     data = await state.get_data()
@@ -169,6 +162,7 @@ async def handle(message: Message, state: FSMContext):
     
     # вынести получение конечного товара в отдельную функцию
     product_data = data['product']
+    print(product_data)
     product_data['uploader_id'] = message.from_user.id
     product_data['file_id'] = file_id
     

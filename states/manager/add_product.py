@@ -6,3 +6,4 @@ class ProductState(StatesGroup):
     description = State()
     price = State()
     upload_file = State()
+    add_amount = State()

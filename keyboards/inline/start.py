@@ -7,9 +7,9 @@ def get_role_start_keyboard(role: str) -> InlineKeyboardMarkup:
     
     if role == "Админ":
         builder.row(InlineKeyboardButton(text="Управление пользователями", callback_data="settings_management_menu"))
-        builder.row(InlineKeyboardButton(text="Добавить товар", callback_data="add_new_product"))
+        builder.row(InlineKeyboardButton(text="Управление товаром", callback_data="manage_product"))
     if role == "Менеджер":
-        builder.row(InlineKeyboardButton(text="Добавить аккаунты к товару", callback_data="view_products"))
+        builder.row(InlineKeyboardButton(text="Управление товаром", callback_data="manage_product"))
     
     builder.row(InlineKeyboardButton(text="Пополнить баланс", callback_data="top_up_balance"))
     builder.row(InlineKeyboardButton(text="Товары", callback_data="get_products"))

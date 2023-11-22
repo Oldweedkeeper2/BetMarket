@@ -24,7 +24,6 @@ class UsersPagination(CallbackData, prefix="manage_setting_User_pagination"):
     page: int
 
 
-
 def get_user_setting_keyboard(id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="Бан", callback_data=UserSetting(id=id,

@@ -130,7 +130,7 @@ def delete_product_folder(account_folder: str, root_zip_path: Union[str, Path]) 
             shutil.rmtree(product_folder_path, ignore_errors=True)
             return True
     except Exception as e:
-        logging.exception("An error occurred: {e}")
+        logging.exception(f"An error occurred: {e}")
         return False
 
 
@@ -155,7 +155,7 @@ async def handle_product_file(product_id: int,
     else:
         logging.debug('processing text file'.upper())
         await processor.process_text_file(file_path)
-
+        await FileManager.delete_file_async(file_path)
 
 # У нас есть корзина, которая содержит идентификаторы продуктов и их количество. Мы должны взять один product_id
 # проверить в наличии (чтобы его не забрали, пока пользователь выбирал) уменьшить количество товаров.
@@ -217,7 +217,7 @@ class ProductBuyProcessor(FileManager):
                 str(order_id))
         self.accounts_path = relative_path['ACCOUNTS_PATH']
     
-    async def handle_buy_product(self) -> str:
+    async def handle_buy_product(self) -> str | None:
         for product_id, amount in self.cart_data.items():
             logging.debug(f'{product_id} {amount}')
             # Получение информации о продукте

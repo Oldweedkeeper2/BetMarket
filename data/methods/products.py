@@ -28,7 +28,7 @@ class ProductSQL:
         )
     
     @classmethod
-    async def get_all_product(cls) -> Sequence[Product] | List:
+    async def get_all(cls) -> Sequence[Product] | List:
         try:
             async with AsyncSessionLocal() as session:  # type: AsyncSession
                 # Модифицируем запрос для включения связанных аккаунтов и файлов
@@ -108,5 +108,53 @@ class ProductSQL:
                     return False
             except Exception as e:
                 logging.debug(f"An error occurred while updating product amount: {e}")
+                await session.rollback()
+                return False
+    
+    @classmethod
+    async def delete(cls, id: int) -> bool:
+        async with AsyncSessionLocal() as session:
+            try:
+                result = await session.execute(
+                        select(Product).where(Product.id == id).with_for_update()
+                )
+                product = result.scalar_one()
+                
+                if product:
+                    await session.delete(product)
+                    await session.commit()
+                    return True
+                else:
+                    await session.rollback()
+                    return False
+            except Exception as e:
+                logging.debug(f"An error occurred while updating product amount: {e}")
+                await session.rollback()
+                return False
+    
+    @classmethod
+    async def update(cls, product_data: Dict) -> bool:
+        async with AsyncSessionLocal() as session:
+            try:
+                # Используем select for update для блокировки строки на время транзакции
+                result = await session.execute(
+                        select(Product).where(Product.id == product_data['id']).with_for_update()
+                )
+                product = result.scalar_one()
+                
+                if product:
+                    # Обновляем поля продукта
+                    for key, value in product_data.items():
+                        if hasattr(product, key):
+                            setattr(product, key, value)
+                    
+                    # Сохраняем изменения
+                    await session.commit()
+                    return True
+                else:
+                    await session.rollback()
+                    return False
+            except Exception as e:
+                logging.debug(f"An error occurred while updating product: {e}")
                 await session.rollback()
                 return False

@@ -1,6 +1,7 @@
+from datetime import datetime, timedelta
 from typing import Union, Optional, Sequence
 
-from sqlalchemy import select, update, delete, insert
+from sqlalchemy import select, update, delete, insert, func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -95,6 +96,21 @@ class OrderSQL:
                                                         joinedload(Order.user)))
                 orders = result.scalars().all()
                 print('orders', orders)
+                return orders
+        except SQLAlchemyError as e:
+            await session.rollback()
+            return []
+    
+    @classmethod
+    async def get_legacy_orders(cls):
+        try:
+            async with AsyncSessionLocal() as session:  # type: AsyncSession
+                # Определяем срок хранения заказов в зависимости от окружения
+                threshold_date = func.current_timestamp() + timedelta(hours=3) - timedelta(days=30)
+                # threshold_date = func.current_timestamp() + timedelta(hours=3) - timedelta(seconds=20)
+                
+                result = await session.execute(select(Order).where(Order.created_at < threshold_date))
+                orders = result.scalars().all()
                 return orders
         except SQLAlchemyError as e:
             await session.rollback()

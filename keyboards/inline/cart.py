@@ -13,7 +13,7 @@ def cart_product_keyboard(product: Product):
 
 def cart_last_product_keyboard():
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="Перейти к оплате", callback_data="pay"))
+    builder.row(InlineKeyboardButton(text="Оплатить", callback_data="pay"))
     builder.row(InlineKeyboardButton(text="Главная", callback_data="start"))
     return builder.as_markup()
 

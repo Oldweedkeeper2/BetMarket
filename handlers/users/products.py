@@ -27,7 +27,7 @@ async def update_pagination_message(call: CallbackQuery, page: int, product_list
 
 @router.callback_query(Pagination.filter(F.action.in_(["prev", "next"])))
 async def handle(call: CallbackQuery, callback_data: Pagination):
-    product_list = await ProductSQL.get_all_product()
+    product_list = await ProductSQL.get_all()
     
     page_num = callback_data.page
     page = max(page_num - 1, 0) if callback_data.action == "prev" else page_num + 1
@@ -41,7 +41,7 @@ async def handle(call: CallbackQuery, callback_data: Pagination):
 
 @router.callback_query(F.data == 'get_products')
 async def handle(call: CallbackQuery, state: FSMContext):
-    product_list = await ProductSQL.get_all_product()
+    product_list = await ProductSQL.get_all()
     print(product_list)
     msg = await call.message.answer(
             text='<b>Выберите товар: Можно поставить сюда продающий текст или условия какие-нибудь</b>',

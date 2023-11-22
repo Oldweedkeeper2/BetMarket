@@ -3,6 +3,7 @@ from pprint import pprint
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
+from aiogram.utils.markdown import hpre
 
 from data.methods.users import UserSQL
 from keyboards.inline.admin.settings import ManageSetting, get_back_keyboard
@@ -16,14 +17,14 @@ router = Router()
 
 
 def get_user_text(user):
-    return f'Пользователь найден:\n\n' \
-           f'<b>ID:</b>\t {user.id}\n' \
-           f'<b>UserName:</b>\t @{user.username or "нет"}\n' \
-           f'<b>LastName:</b>\t {user.surname or "нет"}\n' \
-           f'<b>Phone:</b>\t {user.phone or "нет"}\n' \
-           f'<b>Balance:</b>\t {user.balance}\n' \
-           f'<b>Role:</b>\t {user.role}\n' \
-           f'<b>Banned:</b>\t {user.banned}\n'
+    return hpre(f'Пользователь найден:\n\n'
+                f'ID:           {user.id}\n'
+                f'UserName:     @{user.username or "нет"}\n'
+                f'LastName:     {user.surname or "нет"}\n'
+                f'Phone:        {user.phone or "нет"}\n'
+                f'Balance:      {user.balance}\n'
+                f'Role:         {user.role}\n'
+                f'Banned:       {user.banned}\n')
 
 
 @router.callback_query(ManageSetting.filter(F.role == 'Manager' and F.action == 'choice_action'))

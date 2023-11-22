@@ -5,8 +5,8 @@ from filters import ChatPrivateFilter
 
 def setup_routers() -> Router:
     from .users import start, help, products, cart, balance
-    from .admin import settings, setting_managers, setting_users
-    from .manager import add_product
+    from .admin import settings, setting_managers, setting_users, manage_product, manage_product_edit, \
+        manage_product_add
     from .errors import error_handler
     
     router = Router()
@@ -26,8 +26,10 @@ def setup_routers() -> Router:
     router.include_router(settings.router)
     router.include_router(setting_managers.router)
     router.include_router(setting_users.router)
+    router.include_router(manage_product.router)
+    router.include_router(manage_product_edit.router)
     
     # ADMIN & MANAGER
-    router.include_router(add_product.router)
+    router.include_router(manage_product_add.router)
     
     return router
