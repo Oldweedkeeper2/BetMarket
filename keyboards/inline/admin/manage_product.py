@@ -80,8 +80,6 @@ def get_back_on_view_keyboard(id):
 
 def get_manage_product_edit_keyboard(id):
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="Добавить количество",
-                                     callback_data=ManageProductEdit(id=id, sub_action="add_quantity").pack()))
     builder.row(InlineKeyboardButton(text="Назад",
-                                     callback_data=ManageProductEdit(id=id, sub_action="view").pack()))
+                                     callback_data=ManageProductEdit(id=id, sub_action="edit").pack()))
     return builder.as_markup()

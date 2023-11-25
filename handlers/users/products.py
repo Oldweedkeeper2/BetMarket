@@ -80,7 +80,7 @@ async def handle(call: CallbackQuery, state: FSMContext, callback_data: ProductD
         data['cart'].setdefault(product_id, amount)
     else:
         amount = data['cart'][product_id]
-    keyboard = get_product_keyboard(amount)
+    keyboard = get_product_keyboard(amount, product.amount)
     with suppress(TelegramBadRequest):
         await call.message.edit_text(
                 text=product_text,
@@ -90,13 +90,13 @@ async def handle(call: CallbackQuery, state: FSMContext, callback_data: ProductD
     await state.update_data(data)
 
 
-async def update_amount_pagination_message(call: CallbackQuery, amount: int):
+async def update_amount_pagination_message(call: CallbackQuery, amount: int, total_products: int):
     """Updates the message for pagination."""
     await call.answer()
     with suppress(TelegramBadRequest):
         await call.message.edit_reply_markup(
                 inline_message_id=call.inline_message_id,
-                reply_markup=get_product_keyboard(amount=amount)
+                reply_markup=get_product_keyboard(amount=amount, total_products=total_products)
         )
 
 
@@ -110,7 +110,7 @@ async def handle(call: CallbackQuery, state: FSMContext, callback_data: ProductP
     if callback_data.action == "inc_product" and amount >= product.amount:
         new_amount = amount
     
-    await update_amount_pagination_message(call, new_amount, )
+    await update_amount_pagination_message(call, new_amount, product.amount)
     
     data['cart'][product.id] = new_amount
     await state.update_data(data)

@@ -3,6 +3,7 @@ import mimetypes
 import os
 import random
 import shutil
+from datetime import datetime
 from pathlib import Path
 from typing import List, Union
 
@@ -25,8 +26,27 @@ class FileManager:
             content = await file.read()
         return content.split(';')
     
+    @staticmethod
+    async def generate_unique_file_name(file_path: Union[str, Path]) -> Path:
+        original_file_path = Path(file_path)
+        if not original_file_path.exists():
+            return original_file_path
+        
+        directory = original_file_path.parent
+        base_name = original_file_path.stem
+        extension = original_file_path.suffix
+        unique_file_path = original_file_path
+        print('unique_file_path', unique_file_path)
+        while unique_file_path.exists():
+            print('СУЩЕСТВУЕТ')
+            unique_suffix = datetime.now().strftime("%Y%m%d%H%M%S%f")
+            unique_file_path = directory / f'{base_name}_{unique_suffix}{extension}'
+        
+        return unique_file_path
+    
     @classmethod
     async def write_file(cls, file_path: Union[str, Path], content: str) -> None:
+        print('file_path', file_path)
         async with aiofiles.open(file_path, mode='w') as file:
             await file.write(content)
     
@@ -63,19 +83,22 @@ class ProductFileProcessor(FileManager):
             if account:
                 account_data = {'account_name': str(id), 'product_id': self.product_id}
                 account_id = await AccountSQL.add_account(account_data)
-                
-                simple_account_path = self.root_zip_path / f'{id}.txt'
-                await self.write_file(simple_account_path, account)
-                
-                logging.debug(simple_account_path)
-                zip_destination = self.root_zip_path / f'{id}.zip'
-                
-                logging.debug(zip_destination)
-                await zip_command_handler([str(simple_account_path)], str(zip_destination))
-                
-                logging.debug(get_mime_type(str(zip_destination)))
-                await self.add_file_to_db(zip_destination, account_id)
-                await self.delete_file_async(simple_account_path)
+                try:
+                    simple_account_path = self.root_zip_path / f'{id}.txt'
+                    await self.write_file(simple_account_path, account)
+                    
+                    logging.debug(simple_account_path)
+                    zip_destination = self.root_zip_path / f'{id}.zip'
+                    zip_destination = await self.generate_unique_file_name(zip_destination)
+                    
+                    logging.debug(zip_destination)
+                    await zip_command_handler([str(simple_account_path)], str(zip_destination))
+                    
+                    logging.debug(get_mime_type(str(zip_destination)))
+                    await self.add_file_to_db(zip_destination, account_id)
+                    await self.delete_file_async(simple_account_path)
+                except Exception as e:
+                    logging.debug(e)
         if accounts:
             await ProductSQL.update_product_amount(product_id=self.product_id,
                                                    amount=len(accounts),
@@ -92,7 +115,9 @@ class ProductFileProcessor(FileManager):
                 
                 files_to_zip = [str(file) for file in account_folder.iterdir() if file.is_file()]
                 zip_destination = self.root_zip_path / f"{account_folder.name}.zip"
+                zip_destination = await self.generate_unique_file_name(zip_destination)
                 
+                logging.debug(zip_destination)
                 await zip_command_handler(files_to_zip, str(zip_destination))
                 
                 await self.add_file_to_db(zip_destination, account_id)
@@ -137,6 +162,7 @@ def delete_product_folder(account_folder: str, root_zip_path: Union[str, Path]) 
 def create_product_folder(product_id: int, root_zip_path: Union[str, Path]) -> Path:
     product_folder_path = Path(root_zip_path) / str(product_id)
     if not product_folder_path.exists():
+        print(product_folder_path)
         product_folder_path.mkdir(parents=True, exist_ok=True)
     return product_folder_path
 
@@ -156,6 +182,7 @@ async def handle_product_file(product_id: int,
         logging.debug('processing text file'.upper())
         await processor.process_text_file(file_path)
         await FileManager.delete_file_async(file_path)
+
 
 # У нас есть корзина, которая содержит идентификаторы продуктов и их количество. Мы должны взять один product_id
 # проверить в наличии (чтобы его не забрали, пока пользователь выбирал) уменьшить количество товаров.
