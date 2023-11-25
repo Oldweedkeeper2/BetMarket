@@ -237,7 +237,6 @@ async def handle(call: CallbackQuery, state: FSMContext, callback_data: ManagePr
 
 @router.message(ProductEditState.edit_quantity, F.content_type == CT.DOCUMENT)
 async def handle(message: Message, state: FSMContext):
-    # TODO: создать логику обновления количества товара
     await message.delete()
     data = await state.get_data()
     keyboard = get_back_keyboard()
@@ -272,7 +271,6 @@ async def handle(message: Message, state: FSMContext):
                                   relative_path=relative_path,
                                   is_zip=is_zip,
                                   is_add=False)
-        # TODO: Сделать is_add принимаемым параметром после создания формы добавления\обновления товара
     
     except Exception as e:
         await message.delete()

@@ -32,25 +32,24 @@ async def handle(call: CallbackQuery, state: FSMContext):
         product = await ProductSQL.get_by_id(product_id)
         logging.debug(f'{product_id} {product}')
         if not product:
-            # TODO: добавить какой продукт не существует (это может быть только из-за удаления товара)
             await call.answer('Одного из выбранных вами товаров нет в наличии.\n'
                               'Возможно он был удалён. Обратитесь в службу поддержки', )
             return
         keyboard = cart_product_keyboard(product=product)
-        
-        msg = await call.bot.send_message(
-                text=get_cart_product_text(product, cart[product_id]),
-                chat_id=call.from_user.id,
-                reply_markup=keyboard)
-        
-        if product_id == list(cart.keys())[-1]:
-            keyboard = cart_last_product_keyboard()
+        if product.amount > 0 and cart[product_id] > 0:
             msg = await call.bot.send_message(
-                    text='Выберите действие',  # действие
+                    text=get_cart_product_text(product, cart[product_id]),
                     chat_id=call.from_user.id,
-                    reply_markup=keyboard,
-            )
-        ids_list.append(msg)
+                    reply_markup=keyboard)
+            
+            if product_id == list(cart.keys())[-1]:
+                keyboard = cart_last_product_keyboard()
+                msg = await call.bot.send_message(
+                        text='Выберите действие',  # действие
+                        chat_id=call.from_user.id,
+                        reply_markup=keyboard,
+                )
+            ids_list.append(msg)
     await clear_chat(data=data)
     data['items_to_del'].extend(ids_list)
     await state.update_data(data)

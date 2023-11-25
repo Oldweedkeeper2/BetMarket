@@ -65,14 +65,15 @@ def create_product_pagination_buttons(amount: int):
 def get_product_keyboard(amount: int = 0, total_products: int = 0):
     print(amount, total_products)
     builder = InlineKeyboardBuilder()
-    amount = total_products if amount > total_products else amount
+    amount5 = amount + 4 if amount + 4 < total_products else total_products
+    amount10 = amount + 9 if amount + 9 < total_products else total_products
     builder.row(*create_product_pagination_buttons(amount), width=3)
     builder.row(
             InlineKeyboardButton(text='+ 5',
-                                 callback_data=ProductPagination(action="inc_product", amount=amount + 4).pack()),
+                                 callback_data=ProductPagination(action="inc_product", amount=amount5).pack()),
             InlineKeyboardButton(text='+ 10',
-                                 callback_data=ProductPagination(action="inc_product", amount=amount + 9).pack()))
-    builder.row(InlineKeyboardButton(text="Оформить заказ", callback_data='cart'))
+                                 callback_data=ProductPagination(action="inc_product", amount=amount10).pack()))
+    builder.row(InlineKeyboardButton(text="Корзина", callback_data='cart'))
     builder.row(InlineKeyboardButton(text="Назад", callback_data="get_products"))
     # builder.row(InlineKeyboardButton(text="Главная", callback_data="start"))
     return builder.as_markup()

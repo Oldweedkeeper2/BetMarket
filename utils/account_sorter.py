@@ -36,9 +36,7 @@ class FileManager:
         base_name = original_file_path.stem
         extension = original_file_path.suffix
         unique_file_path = original_file_path
-        print('unique_file_path', unique_file_path)
         while unique_file_path.exists():
-            print('СУЩЕСТВУЕТ')
             unique_suffix = datetime.now().strftime("%Y%m%d%H%M%S%f")
             unique_file_path = directory / f'{base_name}_{unique_suffix}{extension}'
         
@@ -208,7 +206,6 @@ async def handle_buy_product(cart_data: dict, order_id: int, relative_path: dict
         # Проверка наличия продукта и его количества
         if not product or int(product.amount) < int(amount):
             logging.warning(f"Недостаточно товара с ID {product_id} в наличии.")
-            # TODO: сделать выход программы с ошибкой "недостаточно товара {название товара}"
             continue
         
         # Выбор случайных аккаунтов
@@ -275,16 +272,8 @@ class ProductBuyProcessor(FileManager):
             
             return str(zip_order_path)
 
-# Пример использования
-# key = product_id, value = amount
-# cart_data = {3: 2}
-# order_id = 14
-# relative_path = generate_dynamic_zip_path()
-# asyncio.run(ProductBuyProcessor(cart_data, order_id, relative_path).handle_buy_product())
-#
-#
 
-# TODO: СОЗДАТЬ КОММИТ ДЛЯ НАЧАЛА!!!!
+#  СОЗДАТЬ КОММИТ ДЛЯ НАЧАЛА!!!!
 #  1. Создать функции, которые будут принимать amount и product_id, смотреть из бд путь к этому файлу,
 #                       а потом выдавать его, после чего файлы с акками удаляем из бд и папок, так меньше мороки,
 #                       хотя функции для складирования тоже есть. Необходимо будет учитывать связные файлы
@@ -294,16 +283,3 @@ class ProductBuyProcessor(FileManager):
 #  4. Добавить кнопку "Оплатить" и процесс оплаты с баланса личного кабинета. Товары мы не резервируем, так как
 #                       иначе можно просто сломать бота, оставив все акки в резервации.
 #  5. Нужно учитывать, что бота будут бить и пытаться ломать, нужно делать на совесть и тестировать
-#
-
-# test_cart_data = {
-#     1: 4,
-#     2: 5,
-#     3: 1
-# }
-# # Пример использования
-# cart_data = {3: 1}
-# order_id = 123
-# relative_path = generate_dynamic_zip_path()
-# print(relative_path)
-# asyncio.run(handle_buy_product(cart_data, order_id, relative_path))

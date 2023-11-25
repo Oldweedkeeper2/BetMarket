@@ -105,6 +105,8 @@ async def handle(call: CallbackQuery, state: FSMContext, callback_data: ProductP
     data = await state.get_data()
     amount = callback_data.amount
     new_amount = max(amount - 1, 0) if callback_data.action == "dec_product" else amount + 1
+    new_amount = min(new_amount, data['current_product'].amount)
+    print(new_amount)
     product = data['current_product']
     
     if callback_data.action == "inc_product" and amount >= product.amount:
